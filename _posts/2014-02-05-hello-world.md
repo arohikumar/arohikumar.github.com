@@ -20,4 +20,57 @@ Now what is an encoding? We have seen that the unicode character set can represe
 
 Lets take a step back to look at the whole picture. Unicode is a concept, a set of rules to represent characters. Think of unicode as a concept. Now, data is present in the form of unicode strings(believe it or not, over 50% of the content on the web). Now, we crawl some content from the web(assume that it is a unicode string). We need to store that data on the hardware. For storing the data, we need a bytestream. The UTF-8 encoding <i>encodes</i> this unicode string into a bytestream. Similarly, we need the UTF-8 encoding to <i>decode</i> the bytestream into a unicode string when we read the data from the hardware. We <b>must</b> have both these dual operations done by the UTF-8 encoding. Similary Unicode strings can be encoded and subsequently decoded by the UTF-16 encodings. But it would be nonsensical to encode using UTF-8 and decode using UTF-16 or vice-versa. This also highlights the importance of specifying the encoding of the data. If no encoding is specified we can only guess at what the data might say.     
  
-Example coming soon :) Hope you enjoyed that. 
+<b>Code Samples</b>
+Let's fire up the Python interpreter. The string "¿cómo estás" is in the spanish language and means "how are you".  
+
+	$ python
+	Python 2.7.3 (default, Sep 26 2013, 20:03:06) 
+	[GCC 4.6.3] on linux2
+	Type "help", "copyright", "credits" or "license" for more information.
+	>>> s_unicode = u'¿cómo estás'
+	>>> type(s_unicode)
+	<type 'unicode'>
+	>>> s_unicode
+	u'\xbfc\xf3mo est\xe1s'
+
+We see that the string s_unicode is a unicode string(The <i>u</i> preceding the quotes is testament to that). When this data is in transit from one machine to another, within an application or elsewhere, it is suitable to think of the data as a unicode string. When this data is stored, it needs to be stored as a bytestream. To convert it to a bytestream, we need to encode it. 
+
+	>>> s_bytestream = s_unicode.encode('utf8')
+	>>> s_bytestream
+	'\xc2\xbfc\xc3\xb3mo est\xc3\xa1s'
+	>>> type(s_bytestream)
+	<type 'str'>
+	
+We see that the string s_bytestream is not a unicode string(notice the missing <i>u</i> preceding the quotes). Furthermore, we see that the type of s_bytestream is a simple Python string. We can not store our unicode string in a file...
+
+	>>> f = open('unicode_string.txt','w')
+	>>> f.write(s_bytestream)
+	>>> f.close()
+
+A lot of systems provide automatic encoding and decoding with utf8. An example of such a system is MongoDB. Now, lets read the data...
+
+	>>> f = open('unicode_string.txt','r')
+	>>> s_bytestream_from_file = f.read()
+	>>> f.close()
+
+So, we were able to write and read the spanish language. Lets do some comparisons to understand what s_bytestream_read represents.
+
+        >>> s_bytestream_from_file
+        '\xc2\xbfc\xc3\xb3mo est\xc3\xa1s'
+        >>> type(s_bytestream_from_file)
+        <type 'str'>
+        >>> s_bytestream_from_file == s_bytestream
+        True
+        >>> s_bytestream_from_file == s_unicode
+        __main__:1: UnicodeWarning: Unicode equal comparison failed to convert both arguments to Unicode - interpreting them as being unequal
+        False
+
+So we see that by default comparing type <i>str</i> and type <i>unicode</i> raises an exception and treats them as unequal. The proper way to compare these strings is as follows...
+
+        >>> s_bytestream_from_file_converted_to_unicode = s_bytestream_from_file.decode('utf8')
+        >>> type(s_bytestream_from_file_converted_to_unicode) 
+        <type 'unicode'>
+        >>> s_bytestream_from_file_converted_to_unicode == s_unicode
+        True
+
+This is a complete cycle of unicode and UTF-8 encoding. It is recommended that data is converted from bytestream to unicode before proceeding with processing the data. Till next time :)
